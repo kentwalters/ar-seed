@@ -37,14 +37,22 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        configureSceneView()
+    }
+    
+    func configureSceneView() {
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
         
         // Detect horizontal planes
         configuration.planeDetection = .horizontal
-
+        
+        // Let us know how our plane detection is going
+        sceneView.debugOptions = [.showFeaturePoints]
+        
         // Run the view's session
         sceneView.session.run(configuration)
+    
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -52,6 +60,27 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Pause the view's session
         sceneView.session.pause()
+    }
+    
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        addPlaneNode(for: anchor, with: node)
+    }
+    
+    func addPlaneNode(for anchor: ARAnchor, with node: SCNNode) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor.white
+        plane.materials = [material]
+        plane.firstMaterial?.transparency = 0.5
+        
+        let planeNode = SCNNode(geometry: plane)
+        
+        planeNode.position = SCNVector3(planeAnchor.center.x, planeAnchor.center.y, planeAnchor.center.z)
+        planeNode.eulerAngles.x = -.pi / 2
+        planeNode.name = "planeGrid"
+        node.addChildNode(planeNode)
     }
 
     // MARK: - ARSCNViewDelegate
