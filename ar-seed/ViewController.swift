@@ -13,6 +13,7 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    var planes = [ARPlaneAnchor: Plane]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -83,7 +84,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         node.geometry = sphereGeometry
         node.setWorldTransform(SCNMatrix4(position))
         
-        
         sceneView.scene.rootNode.addChildNode(node)
     }
     
@@ -95,42 +95,32 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        addPlaneNode(for: anchor, with: node)
+        DispatchQueue.main.async {
+            if let planeAnchor = anchor as? ARPlaneAnchor {
+                self.addPlane(node: node, anchor: planeAnchor)
+            }
+        }
     }
     
-    func addPlaneNode(for anchor: ARAnchor, with node: SCNNode) {
-        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
-        
-        let x = CGFloat(planeAnchor.extent.x)
-        let z = CGFloat(planeAnchor.extent.z)
-        
-        let sideLength = max(x, z)
-        
-        let plane = SCNPlane(width: sideLength, height: sideLength)
-        
-        let material = SCNMaterial()
-        material.diffuse.contents = UIColor.white
-        plane.materials = [material]
-        plane.firstMaterial?.transparency = 0.5
-        
-        let planeNode = SCNNode(geometry: plane)
-        
-        planeNode.position = SCNVector3(planeAnchor.center.x, planeAnchor.center.y, planeAnchor.center.z)
-        planeNode.eulerAngles.x = -.pi / 2
-        planeNode.name = "planeGrid"
-        node.addChildNode(planeNode)
+    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        DispatchQueue.main.async {
+            if let planeAnchor = anchor as? ARPlaneAnchor {
+                self.updatePlane(anchor: planeAnchor)
+            }
+        }
     }
-
-    // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
+    func addPlane(node: SCNNode, anchor: ARPlaneAnchor) {
+        let plane = Plane(anchor)
+        planes[anchor] = plane
+        node.addChildNode(plane)
     }
-*/
+    
+    func updatePlane(anchor: ARPlaneAnchor) {
+        if let plane = planes[anchor] {
+            plane.update(anchor)
+        }
+    }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
