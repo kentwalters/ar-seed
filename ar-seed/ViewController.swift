@@ -18,6 +18,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.viewDidLoad()
         
         setUpScene()
+        setUpTapGestureRecognizer()
     }
     
     func setUpScene() {
@@ -53,6 +54,37 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Run the view's session
         sceneView.session.run(configuration)
     
+        sceneView.autoenablesDefaultLighting = true
+    }
+    
+    func setUpTapGestureRecognizer() {
+        let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap(for:)))
+        sceneView.addGestureRecognizer(tapRecognizer)
+    }
+    
+    @objc
+    func handleTap(for recognizer: UIGestureRecognizer) {
+        let location = recognizer.location(in: self.sceneView)
+        let hitTestResults = sceneView.hitTest(location, types: .existingPlaneUsingExtent)
+        guard let hitTestResult = hitTestResults.first else { return }
+        let translation = hitTestResult.worldTransform.self
+        addNodeToScene(at: translation)
+    }
+    
+    func addNodeToScene(at position: matrix_float4x4) {
+        
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor.red
+        
+        let sphereGeometry = SCNSphere(radius: 0.05)
+        sphereGeometry.materials = [material]
+        
+        let node = SCNNode()
+        node.geometry = sphereGeometry
+        node.setWorldTransform(SCNMatrix4(position))
+        
+        
+        sceneView.scene.rootNode.addChildNode(node)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -68,7 +100,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     func addPlaneNode(for anchor: ARAnchor, with node: SCNNode) {
         guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
-        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        
+        let x = CGFloat(planeAnchor.extent.x)
+        let z = CGFloat(planeAnchor.extent.z)
+        
+        let sideLength = max(x, z)
+        
+        let plane = SCNPlane(width: sideLength, height: sideLength)
         
         let material = SCNMaterial()
         material.diffuse.contents = UIColor.white
