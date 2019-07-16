@@ -20,12 +20,12 @@ class Plane: SCNNode {
         self.planeAnchor = anchor
         
         let material = SCNMaterial()
-        material.diffuse.contents = UIColor.white
+        material.diffuse.contents = UIImage(named: "field")
         
         self.planeGeometry = SCNPlane(width: CGFloat(anchor.extent.x), height: CGFloat(anchor.extent.z))
         self.planeGeometry.materials = [material]
         
-        self.planeGeometry.firstMaterial?.transparency = 0.5
+        self.planeGeometry.firstMaterial?.transparency = 1
         self.planeNode = SCNNode(geometry: planeGeometry)
         self.planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2.0, 1, 0, 0)
         

@@ -13,7 +13,9 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    
     var planes = [ARPlaneAnchor: Plane]()
+    var dudes = [ARAnchor: SCNNode]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -50,7 +52,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         configuration.planeDetection = .horizontal
         
         // Let us know how our plane detection is going
-        sceneView.debugOptions = [.showFeaturePoints]
+//        sceneView.debugOptions = [.showFeaturePoints]
         
         // Run the view's session
         sceneView.session.run(configuration)
@@ -69,22 +71,27 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let hitTestResults = sceneView.hitTest(location, types: .existingPlaneUsingExtent)
         guard let hitTestResult = hitTestResults.first else { return }
         let translation = hitTestResult.worldTransform.self
+        
         addNodeToScene(at: translation)
+        
     }
     
     func addNodeToScene(at position: matrix_float4x4) {
         
-        let material = SCNMaterial()
-        material.diffuse.contents = UIColor.red
+        guard let scene = SCNScene(named: "art.scnassets/dl4.scn") else {
+            print("could not get scene")
+            return
+        }
         
-        let sphereGeometry = SCNSphere(radius: 0.05)
-        sphereGeometry.materials = [material]
+        let newNode = SCNNode()
+        newNode.setWorldTransform(SCNMatrix4(position))
+
+        for child in scene.rootNode.childNodes {
+            newNode.addChildNode(child)
+        }
+        newNode.scale = SCNVector3(0.005, 0.005, 0.005)
         
-        let node = SCNNode()
-        node.geometry = sphereGeometry
-        node.setWorldTransform(SCNMatrix4(position))
-        
-        sceneView.scene.rootNode.addChildNode(node)
+        sceneView.scene.rootNode.addChildNode(newNode)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -99,6 +106,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             if let planeAnchor = anchor as? ARPlaneAnchor {
                 self.addPlane(node: node, anchor: planeAnchor)
             }
+            
+            self.dudes[anchor] = node
         }
     }
     
@@ -107,6 +116,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             if let planeAnchor = anchor as? ARPlaneAnchor {
                 self.updatePlane(anchor: planeAnchor)
             }
+            
+            print(node)
+            print(anchor)
         }
     }
     
